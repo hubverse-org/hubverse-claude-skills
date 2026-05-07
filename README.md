@@ -6,7 +6,7 @@ Shared [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skill
 
 | Skill | Description |
 |-------|-------------|
-| *Coming soon* | |
+| [`hubverse-release`](skills/hubverse-release) | Walk through the hubverse R package release checklist end to end (version bump, NEWS, release branch and PR, optional CRAN prep, tag, GitHub release, post-release dev bump). |
 
 ## Setup
 
