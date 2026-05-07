@@ -6,6 +6,8 @@ Shared [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skill
 
 | Skill | Description |
 |-------|-------------|
+| [`dashboard-local-build`](skills/dashboard-local-build) | Build a hub dashboard locally end to end using the three-tool pipeline (predtimechart, predevals, site-builder), with optional swap-in of dev versions of any tool. |
+| [`dashboard-smoke-test`](skills/dashboard-smoke-test) | Set up `smoke-test` branches across dashboard tool repos so a skill can be tested against dev versions, then verify and clean up. |
 | [`hubverse-release`](skills/hubverse-release) | Walk through the hubverse R package release checklist end to end (version bump, NEWS, release branch and PR, optional CRAN prep, tag, GitHub release, post-release dev bump). |
 
 ## Setup
