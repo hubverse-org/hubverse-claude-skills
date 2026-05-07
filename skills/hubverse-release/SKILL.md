@@ -35,7 +35,7 @@ Valid bump levels are: major, minor, patch.
 
 ## Phase 1 — Prepare the release branch
 
-7. **Create release branch** named `<initials>/release/$VERSION` from `main`.
+7. **Create release branch** named `{initials}/release/$VERSION` from `main`.
 
 8. **Update version** by running in R:
    ```r
@@ -49,7 +49,7 @@ Valid bump levels are: major, minor, patch.
 
 11. **Commit and push** the release branch.
 
-12. **Create a PR** to `main`. Title: `Release <package name> $VERSION`. In the body, include a summary of changes from NEWS.md. Do NOT include a "Test plan" section in release or post-release PRs — they're version bumps, not feature work, and CI covers the checks.
+12. **Create a PR** to `main`. Title: `Release {package name} $VERSION`. In the body, include a summary of changes from NEWS.md. Do NOT include a "Test plan" section in release or post-release PRs — they're version bumps, not feature work, and CI covers the checks.
 
 ## Phase 1a — CRAN submission prep (only if user opted in during setup)
 
@@ -101,7 +101,7 @@ IMPORTANT: Confirm with the user that the PR is approved (and, if a CRAN release
 
 23. **Create a signed tag**:
     ```
-    git tag -s v$VERSION -m '<short summary of changes>'
+    git tag -s v$VERSION -m '{short summary of changes}'
     ```
     Ask the user to confirm the tag message before creating it.
 
@@ -139,14 +139,7 @@ IMPORTANT: Confirm with the user that the PR is approved (and, if a CRAN release
 
 After creating each PR, compose a short Slack review request message in Slack markdown and copy it to the clipboard. The tone should be casual and friendly. Examples:
 
-- Release PR: "Hi all! Can I get a quick rubber stamp review on the PR to release <package> v$VERSION? <PR URL>"
-- Post-release PR: "Any chance I can get another rubber stamp PR to bump to dev version? <PR URL>"
+- Release PR: "Hi all! Can I get a quick rubber stamp review on the PR to release {package} v$VERSION? {PR URL}"
+- Post-release PR: "Any chance I can get another rubber stamp PR to bump to dev version? {PR URL}"
 
-Pick a clipboard tool based on what's available on the user's system. Try in this order and use the first one that exists:
-
-1. macOS: `pbcopy`
-2. Linux (Wayland): `wl-copy`
-3. Linux (X11): `xclip -selection clipboard` or `xsel --clipboard --input`
-4. Windows / WSL: `clip.exe`
-
-If none are available, print the message in the chat instead and tell the user to copy it manually. Do not install a clipboard tool.
+Copy to the clipboard using the appropriate command for the user's OS. If no clipboard tool is available, print the message in the chat and tell the user to copy it manually, and do not install a clipboard tool. When printing, do not wrap lines for the terminal: output each paragraph as a single line so it copies cleanly into Slack.
