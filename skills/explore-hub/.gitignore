@@ -1,0 +1,19 @@
+# Claude Code
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+
+# uv
+.python-version
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# macOS
+.DS_Store
