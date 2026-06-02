@@ -4,9 +4,10 @@ Shared [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skill
 
 ## Available skills
 
-| Skill | Description |
-|-------|-------------|
+| Skill | Description                                                                                                                                                                   |
+|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`hubverse-release`](skills/hubverse-release) | Walk through the hubverse R package release checklist end to end (version bump, NEWS, release branch and PR, optional CRAN prep, tag, GitHub release, post-release dev bump). |
+| [`explore-hub`](skills/explore-hub) | A prototype skill to help hub administrators explore a hub. See [explore-hub/README.md](explore-hub/README.md) for details.                                                   |
 
 ## Setup
 
