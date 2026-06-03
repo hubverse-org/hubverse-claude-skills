@@ -100,10 +100,16 @@ Fields are included only when the corresponding build step was executed. For exa
     "image": "ghcr.io/hubverse-org/hubpredevalsdata-docker:latest",
     "digest": "sha256:...",
     "url": "https://github.com/hubverse-org/hubPredEvalsData-docker/pkgs/container/hubpredevalsdata-docker"
-    // Docker dev (no registry digest):
+    // Docker dev built from a hubPredEvalsData-docker checkout (no registry digest):
     //   "source": "dev",
+    //   "image": "ghcr.io/hubverse-org/hubpredevalsdata-dev:4.5",
     //   "path": "/local/repo/path",
     //   "branch": "feature-x"
+    // Docker dev pulled (dev R packages layered on the published dev image):
+    //   "source": "dev",
+    //   "image": "ghcr.io/hubverse-org/hubpredevalsdata-dev:4.5",
+    //   "digest": "sha256:...",
+    //   "packages": { /* dev R package sources, as in native-r below */ }
     // Native R:
     //   "method": "native-r",
     //   "r_version": "4.5.2",

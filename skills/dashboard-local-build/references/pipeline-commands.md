@@ -103,8 +103,12 @@ Rscript "$hubPredEvalsData_docker_path/scripts/create-predevals-data.R" \
 
 ### Local data mode
 
+`render.sh` merges into an existing `_site` (`cp -R tmp/_site/ $PWD/_site`), so clear it first or stale files survive (e.g. an old CDN `predevals_interface.js`, a missing local `predevals.bundle.js`).
+
 ```bash
 docker pull --platform=linux/amd64 ghcr.io/hubverse-org/hub-dash-site-builder:latest
+
+rm -rf "$dash/_site"
 
 docker run --rm \
   --platform=linux/amd64 \
@@ -134,6 +138,8 @@ uv run python3 -m http.server 8080 -d "$dash/_site"
 # Open http://localhost:8080
 ```
 
+For a dev `predevals` build, the eval page's ES-module bundle is cached aggressively — a normal refresh often keeps serving the old (often CDN) bundle. Hard-refresh (Cmd/Ctrl+Shift+R) or use an incognito window, or serve with no-cache headers (`Cache-Control: no-store`) so every refresh re-fetches. Confirm server-side before assuming a build problem: `diff "$dash/_site/resources/predevals.bundle.js" "$predevals_path/dist/predevals.bundle.js"` and check the served interface imports `./predevals.bundle.js`, not the CDN.
+
 ## Expected output structure
 
 ```
@@ -160,12 +166,38 @@ dashboard/
 uv run pip install --quiet "git+https://github.com/hubverse-org/hub-dashboard-predtimechart@<branch>"
 ```
 
-### predevals (build dev Docker image)
+### hubPredEvalsData-docker (dev image, ephemeral smoke test)
+
+The dev image inherits from a published base (`ghcr.io/hubverse-org/hubpredevalsdata-base:<R-minor>`) and is itself published. Images are tagged by R-minor version (e.g. `4.5`); there is no `:latest` tag.
+
+**Smoke testing must never write a host `renv.lock`** (that is only for deliberate version bumps). So do **not** bind-mount any repo over `/project`; use the renv project baked into the image and mount everything else elsewhere, so all `renv` writes stay in the throwaway container.
+
 ```bash
-git clone -b <branch> https://github.com/hubverse-org/hubPredEvalsData-docker.git /tmp/predevals-docker-dev
-cd /tmp/predevals-docker-dev
-docker build --platform=linux/amd64 -t hubpredevalsdata-docker:dev .
-# Then use hubpredevalsdata-docker:dev in docker run
+# Pull the published dev image (build from a checkout only if it changes baked
+# files: the Dockerfiles, DESCRIPTION, .Rprofile, renv/activate.R)
+docker pull --platform=linux/amd64 ghcr.io/hubverse-org/hubpredevalsdata-dev:4.5
+
+# Start a container with NOTHING over /project. hub read-only, dashboard
+# read-write (for output), dev repos read-only under /dev.
+docker run -d --platform=linux/amd64 --name dev-evals \
+  -v "$hub":/hub:ro \
+  -v "$dash":/dash \
+  -v "$hubPredEvalsData_path":/dev/hubPredEvalsData:ro \
+  -v "$hubPredEvalsData_docker_path":/dev/hubPredEvalsData-docker:ro \
+  ghcr.io/hubverse-org/hubpredevalsdata-dev:4.5 sleep infinity
+
+# Install released packages into the baked project, then layer dev packages
+# (lock = TRUE updates the in-container lockfile only):
+docker exec dev-evals Rscript scripts/update.R
+docker exec dev-evals Rscript -e 'renv::install("/dev/hubPredEvalsData", lock = TRUE)'
+
+# Run the pipeline. create-predevals-data.R is NOT on PATH in the dev image, so
+# use Rscript. Run the MOUNTED checkout's script to exercise docker-repo changes;
+# omit -d to test the forthcoming hubData oracle auto-discovery.
+docker exec dev-evals Rscript /dev/hubPredEvalsData-docker/scripts/create-predevals-data.R \
+  -h /hub -c /dash/predevals-config.yml -o /dash/data/evals
+
+docker stop dev-evals && docker rm dev-evals
 ```
 
 ### predevals (native R from branch)
@@ -180,3 +212,5 @@ cd /tmp/site-builder-dev
 docker build --platform=linux/amd64 -t hub-dash-site-builder:dev .
 # Then use hub-dash-site-builder:dev in docker run
 ```
+
+To test a dev `predevals` bundle through site-builder, before `docker build` patch the static resources in the checkout (see SKILL.md "Dev site-builder"): copy `predevals.bundle.js` into `static/resources/`, repoint the `predevals_interface.js` import from the CDN to `./predevals.bundle.js`, and add the bundle to `static/_quarto.yml` `resources:` so Quarto copies it. The site-builder `main` already loads the front-end libs the current predevals needs (d3, dataTables `columnControl`/`fixedColumns`).
