@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -f /tmp/explore_hub_query.py)",
+      "Write(/tmp/explore_hub_query.py)"
+    ]
+  }
+}
