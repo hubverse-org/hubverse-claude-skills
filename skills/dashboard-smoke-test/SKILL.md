@@ -68,12 +68,12 @@ No branch selection in this procedure (this skill always creates `smoke-test` fr
 
 Use `AskUserQuestion` with `multiSelect: true`:
 - header: "Repos"
-- Option 1: "All 9 repos (Recommended)" with description "Create smoke-test branches on all tool repos, test dashboard, and test hub"
+- Option 1: "All repos (Recommended)" with description "Create smoke-test branches on every repo in the table above (test dashboard, test hub, and all tool repos)"
 - Option 2: "Core only" with description "Test dashboard + test hub only"
 - Option 3: "Forecast tools" with description "hub-dashboard-predtimechart + hub-data"
 - Option 4: "Eval tools" with description "hubPredEvalsData + hubEvals + hubPredEvalsData-docker"
 
-Note: "Site tools" (predevals + hub-dash-site-builder) can be added as an option if the list permits, otherwise the user can select "All 9 repos" or use "Other" to specify.
+Note: "Site tools" (predevals + hub-dash-site-builder) can be added as an option if the list permits, otherwise the user can select "All repos" or use "Other" to specify.
 
 ### Select mode
 

@@ -1,77 +1,6 @@
-# Build Info Schema and Version Collection
+# Build Info Schema
 
-Reference for collecting tool versions during local dashboard builds and the shared `build-info.json` schema used by both the local build skill and CI.
-
-## Version collection commands
-
-### Forecasts (predtimechart)
-
-```bash
-# Python version
-python3 --version 2>&1
-
-# predtimechart package version
-"$dash/.venv/bin/pip" show hub-dashboard-predtimechart 2>/dev/null | grep '^Version:' | cut -d' ' -f2
-
-# hubdata package version (dependency)
-"$dash/.venv/bin/pip" show hubdata 2>/dev/null | grep '^Version:' | cut -d' ' -f2
-```
-
-For dev installs, check the install location to distinguish local from release:
-```bash
-"$dash/.venv/bin/pip" show hub-dashboard-predtimechart 2>/dev/null | grep '^Location:'
-```
-
-### Evals (predevals)
-
-**Docker path:**
-```bash
-# Registry digest of the pulled image
-docker inspect ghcr.io/hubverse-org/hubpredevalsdata-docker:latest \
-  --format='{{index .RepoDigests 0}}' 2>/dev/null
-```
-
-**Native R path:**
-```bash
-# R version and hubverse package versions with sources
-Rscript -e '
-  message("R version: ", getRversion())
-  hub_pkgs <- grep("^hub|^Hub", installed.packages()[,"Package"], value = TRUE)
-  for (pkg in hub_pkgs) {
-    desc <- packageDescription(pkg)
-    message(pkg, " ", desc$Version, " (",
-      if (!is.null(desc$Repository)) desc$Repository
-      else if (!is.null(desc$RemoteType)) paste0(desc$RemoteType, ": ", desc$RemoteRepo, "@", substr(desc$RemoteSha, 1, 7))
-      else if (!is.null(desc$Built)) "local"
-      else "unknown",
-    ")")
-  }
-'
-```
-
-### Site (site-builder)
-
-```bash
-# Registry digest of the pulled image
-docker inspect ghcr.io/hubverse-org/hub-dash-site-builder:latest \
-  --format='{{index .RepoDigests 0}}' 2>/dev/null
-```
-
-### Repos (all checkpoints)
-
-```bash
-# Dashboard commit and branch
-git -C "$dash" branch --show-current
-git -C "$dash" rev-parse --short HEAD
-
-# Hub commit and branch
-git -C "$hub" branch --show-current
-git -C "$hub" rev-parse --short HEAD
-
-# Remote slug (for URLs)
-git -C "$dash" remote get-url origin 2>/dev/null | sed 's|.*github.com[:/]||;s|\.git$||'
-git -C "$hub" remote get-url origin 2>/dev/null | sed 's|.*github.com[:/]||;s|\.git$||'
-```
+The shared `build-info.json` contract used by both the local build skill and CI, plus notes on how its fields are populated. The commands that collect each version are inline in `SKILL.md` at the step that produces them; this file defines the shape they feed into.
 
 ## build-info.json schema
 
@@ -109,13 +38,10 @@ Fields are included only when the corresponding build step was executed. For exa
     //   "source": "dev",
     //   "image": "ghcr.io/hubverse-org/hubpredevalsdata-dev:4.5",
     //   "digest": "sha256:...",
-    //   "packages": { /* dev R package sources, as in native-r below */ }
-    // Native R:
-    //   "method": "native-r",
     //   "r_version": "4.5.2",
     //   "packages": {
     //     "hubPredEvalsData": { "version": "0.1.0", "source": "GitHub: hubverse-org/hubPredEvalsData@76c0821" },
-    //     "hubEvals": { "version": "0.2.0", "source": "r-universe" }
+    //     "hubEvals": { "version": "0.2.0", "source": "local" }
     //   }
   },
 
@@ -154,7 +80,7 @@ Fields are included only when the corresponding build step was executed. For exa
 ### Schema notes
 
 - **`build_source`**: `"local"` for skill builds, `"ci"` for GitHub Actions builds.
-- **`predevals.method`**: `"docker"` or `"native-r"`. Determines which sub-fields are present.
+- **`predevals.method`**: always `"docker"`. The variant (released image, dev image built from a checkout, or published dev image with dev R packages layered in) is distinguished by `source`, `digest`, and `packages`.
 - **`source: "dev"`**: Present on any tool installed from a local repo checkout. When set, `path` and `branch` replace release URLs/digests.
 - **Docker digests**: Use `docker inspect --format='{{index .RepoDigests 0}}'` for pulled images (matches `crane digest`). Dev-built images have no registry digest.
 - **Omitted sections**: If a build step was skipped (e.g., evals-only build), the corresponding top-level keys are omitted rather than set to null.

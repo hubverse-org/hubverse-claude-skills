@@ -11,7 +11,15 @@ disable-model-invocation: true
 
 # Local Dashboard Build
 
-Build a hub dashboard locally using the three-tool pipeline: predtimechart (forecasts), predevals (evaluations), and site-builder (rendered site).
+Build a hub dashboard locally using the three-tool pipeline (condensed from [hubDocs: Local Dashboard Workflow](https://hubverse.io/en/latest/developer/dashboard-local.html)):
+
+| Step | Tool | Repo | Produces |
+|------|------|------|----------|
+| 1. Forecasts | predtimechart (Python) | `hub-dashboard-predtimechart` | `data/ptc/` (targets, forecasts, options) |
+| 2. Evaluations | predevals (Docker) | `hubPredEvalsData-docker` | `data/evals/` (scores, options) |
+| 3. Site | site-builder (Docker) | `hub-dash-site-builder` | `_site/` (rendered HTML) |
+
+`$dash` is the dashboard repo root, `$hub` the hub repo root. Each step is skippable based on which configs the dashboard has (`predtimechart-config.yml`, `predevals-config.yml`) and the chosen build scope. Forecasts run in a Python venv; evals and site run through Docker.
 
 **Use `AskUserQuestion` at every decision point.** Whenever this skill presents options to the user (branch selection, build scope, evals path, local clone location, etc.), use the `AskUserQuestion` tool with well-labelled options rather than printing choices as text. When multiple questions don't depend on each other's answers (e.g. the three dev tool group questions when build scope is "All"), combine them into a single `AskUserQuestion` call using the `questions` array.
 
@@ -22,7 +30,7 @@ Build a hub dashboard locally using the three-tool pipeline: predtimechart (fore
 - **All cloning goes to `/tmp/`** unless the user provides a different path.
 - **Never save `/tmp/` paths** to `~/.claude/dashboard-repos.yml`. These are ephemeral clone locations that will not persist across sessions.
 
-Read `${CLAUDE_SKILL_DIR}/references/pipeline-commands.md` for the exact command reference.
+This skill is self-contained: run the commands inline, top to bottom. One reference supports it, loaded only when needed: `${CLAUDE_SKILL_DIR}/references/build-info-schema.md`, the shared `build-info.json` contract for the final report.
 
 ## Locate repo procedure
 
@@ -213,7 +221,7 @@ Inform the user of these relationships so they can decide whether downstream too
 - **hubEvals** is a dependency of **hubPredEvalsData**. A dev hubEvals does not require rebuilding the predevals Docker image: in the Dev Docker path it is mounted read-only into the dev container and installed at runtime with `renv::install("/dev/hubEvals", lock = TRUE)`.
 - **hubdata** is a dependency of **hub-dashboard-predtimechart**. Install into the same venv before predtimechart.
 - **hubPredEvalsData** is packaged into **hubPredEvalsData-docker**, but a dev hubPredEvalsData does **not** require rebuilding the image: in the Dev Docker path it is mounted read-only and installed at runtime with `renv::install("/dev/hubPredEvalsData", lock = TRUE)`. Rebuild the dev image only when the checkout changes files baked into it (the Dockerfiles, `DESCRIPTION`, `.Rprofile`, `renv/activate.R`); script changes are exercised by mounting and running the checkout's script directly.
-- **predevals** (JS) is loaded by **hub-dash-site-builder** from a CDN. A dev predevals requires building the JS bundle locally and patching the site-builder's `predevals_interface.js` import + `_quarto.yml` (not `render.sh`) to use the local bundle, so hub-dash-site-builder also needs a dev image build. Note the site-builder `main` already carries the front-end libraries the current predevals expects (d3, dataTables `columnControl`/`fixedColumns`); the dev build is only to inject the local bundle.
+- **predevals** (JS) is loaded by **hub-dash-site-builder** from a CDN. A dev predevals requires building the JS bundle locally and patching the site-builder's `predevals_interface.js` import + `_quarto.yml` (not `render.sh`) to use the local bundle, so hub-dash-site-builder also needs a dev image build. Note the site-builder `main` already carries the front-end libraries the current predevals expects; the dev build is only to inject the local bundle. If a newer predevals needs a library the site-builder lacks, that surfaces as a console error to diagnose.
 
 Use `AskUserQuestion` to confirm whether the user wants to also locate any implied downstream tools that weren't already selected.
 
@@ -243,6 +251,23 @@ Create the output directories:
 ```bash
 mkdir -p "$dash/data/ptc/"{targets,forecasts}
 mkdir -p "$dash/data/evals"
+```
+
+A full build produces this layout under the dashboard repo:
+```
+data/
+  ptc/
+    targets/          # JSON files per location/date
+    forecasts/        # JSON files per model/location/date
+    predtimechart-options.json
+  evals/
+    scores/           # Nested CSV directories
+    predevals-options.json
+_site/
+  index.html
+  forecast.html
+  eval.html           # Only if evals data was generated
+  resources/
 ```
 
 ## 4. Step 1: Generate forecasts (predtimechart)
@@ -294,7 +319,7 @@ echo "Forecast files: $(ls $dash/data/ptc/forecasts/*.json 2>/dev/null | wc -l)"
 echo "Options file: $(ls $dash/data/ptc/predtimechart-options.json 2>/dev/null && echo 'exists' || echo 'MISSING')"
 ```
 
-Collect tool versions for the final build report (see `references/build-info-schema.md` for commands). For dev installs, also note the install source (local path vs release tag).
+Collect tool versions for the final build report (these feed the `build-info.json` contract in `references/build-info-schema.md`). For dev installs, also note the install source (local path vs release tag).
 ```bash
 echo "Python: $(python3 --version 2>&1)"
 echo "predtimechart: $("$dash/.venv/bin/pip" show hub-dashboard-predtimechart 2>/dev/null | grep '^Version:' | cut -d' ' -f2)"
@@ -309,15 +334,14 @@ echo "hubdata: $("$dash/.venv/bin/pip" show hubdata 2>/dev/null | grep '^Version
 
 ### Choose path
 
-Check if R is available: `Rscript --version 2>/dev/null`
-
 **If the user selected `hubPredEvalsData-docker` as a dev tool**, skip this question and go directly to the **Dev Docker path**, carrying the axis B/C choice from the "Docker repo" question above. Axis B (scripts) pulls the published dev image and runs the checkout's mounted script; axis C (image) builds the image from the checkout. Either way, dev R packages (axis A) layer on at runtime.
 
-**Otherwise**, use `AskUserQuestion`:
+**If the user selected dev `hubPredEvalsData` or `hubEvals` (but not `hubPredEvalsData-docker`)**, use `AskUserQuestion` to choose between two Docker-based paths:
 - header: "Evals path"
-- Option 1: "Docker (Recommended)" with description "Use the published Docker image, no R required"
-- Option 2 (only if R is available): "Native R" with description "Install the R package directly, faster iteration"
-- Option 3 (only if the user selected other dev evals tools like `hubPredEvalsData` or `hubEvals` but not `hubPredEvalsData-docker`): "Dev Docker" with description "Pull the published dev image and layer in local dev R packages (ephemeral, no host renv.lock writes)"
+- Option 1: "Docker (Recommended)" with description "Use the published Docker image as-is"
+- Option 2: "Dev Docker" with description "Pull the published dev image and layer in local dev R packages (ephemeral, no host renv.lock writes)"
+
+**Otherwise**, use the **Docker path** directly.
 
 ### Docker path
 
@@ -335,72 +359,21 @@ docker run --rm --platform=linux/amd64 \
     -o "data/evals"
 ```
 
-### Native R path
-
-The native R path uses the same `create-predevals-data.R` entrypoint script from `hubPredEvalsData-docker`, run directly with Rscript instead of inside Docker. This script handles reading the oracle CSV (with proper type parsing), calling `generate_eval_data`, and generating `predevals-options.json`.
-
-#### Extract the script
-
-For **released versions**, extract the script from the published Docker image (already pulled in the Docker prerequisite check or pull it now):
-```bash
-docker pull --platform=linux/amd64 ghcr.io/hubverse-org/hubpredevalsdata-docker:latest
-predevals_script="$dash/create-predevals-data.R"
-docker run --rm --platform=linux/amd64 --entrypoint cat \
-  ghcr.io/hubverse-org/hubpredevalsdata-docker:latest \
-  /usr/local/bin/create-predevals-data.R > "$predevals_script"
-```
-
-For a **dev version**, use the script from the local `hubPredEvalsData-docker` repo if the user selected it:
-```bash
-predevals_script="$hubPredEvalsData_docker_path/scripts/create-predevals-data.R"
-```
-
-If the user did not select `hubPredEvalsData-docker` as dev, fall back to extracting from the Docker image as above.
-
-#### Install R dependencies
-
-For **released versions**, install from r-universe and GitHub:
-```r
-install.packages("hubEvals", repos = c("https://hubverse-org.r-universe.dev", "https://cloud.r-project.org"))
-remotes::install_github("hubverse-org/hubPredEvalsData", upgrade = "never")
-```
-
-For a **dev version**, install from local repos. If hubEvals was also selected as dev, install it first:
-```r
-remotes::install_local("<hubEvals_path>", upgrade = "always")  # only if hubEvals is dev
-remotes::install_local("<hubPredEvalsData_path>", upgrade = "always")
-```
-
-#### Run the script
-
-```bash
-Rscript "$predevals_script" \
-  -h "$hub" \
-  -c "$dash/predevals-config.yml" \
-  -d "$hub/target-data/oracle-output.csv" \
-  -o "$dash/data/evals"
-```
-
-#### Clean up extracted script
-
-If the script was extracted from the Docker image (not from a dev repo), remove it after the run:
-```bash
-rm -f "$dash/create-predevals-data.R"
-```
-
 ### Dev Docker path
 
 The `hubPredEvalsData-docker` repo publishes a dev Docker image for **ephemeral** smoke testing. It uses the conventional renv setup (autoloader enabled, packages resolve fresh from r-universe/CRAN, no `GITHUB_PAT` needed). The critical rule:
 
 > **Smoke testing must never write to a host `renv.lock`.** The lockfile is only made writable when deliberately bumping pinned versions (the "Updating renv.lock" workflow in the docker repo's README, which bind-mounts the repo at `/project`). For smoke testing, do **not** bind-mount any repo over `/project`. The image already carries a baked renv project (`DESCRIPTION`, `.Rprofile`, `renv/activate.R`, `scripts/`) at `/project`; use it, so every `renv` install (library **and** lockfile) lands inside the throwaway container and the host repos are never touched.
 
-The dev image inherits from a **published** base (`ghcr.io/hubverse-org/hubpredevalsdata-base:<R-minor>`) and is itself published to GHCR. Images are tagged by R-minor (e.g. `4.5`); there is intentionally **no `:latest` tag**, so always reference the explicit tag. Determine it from the repo's dev Dockerfile (default `4.5`):
+The dev image inherits from a **published** base (`ghcr.io/hubverse-org/hubpredevalsdata-base:<R-minor>`) and is itself published to GHCR. Images are tagged by R-minor (e.g. `4.5`); there is intentionally **no `:latest` tag**, so always reference the explicit tag. Read it from the repo's dev Dockerfile rather than assuming a value:
 
 ```bash
 tag=$(grep -oE 'hubpredevalsdata-base:[0-9]+\.[0-9]+' \
   "$hubPredEvalsData_docker_path/docker/dev.Dockerfile" 2>/dev/null \
   | head -1 | cut -d: -f2)
-tag="${tag:-4.5}"
+if [ -z "$tag" ]; then
+  echo "Could not read the R-minor tag from docker/dev.Dockerfile; inspect the repo and set \$tag manually before continuing." >&2
+fi
 image="ghcr.io/hubverse-org/hubpredevalsdata-dev:$tag"
 ```
 
@@ -481,7 +454,15 @@ docker exec dev-evals Rscript scripts/create-predevals-data.R \
   -h /hub -c /dash/predevals-config.yml -o /dash/data/evals
 ```
 
-About `-d`: today it is the standard way to point at the oracle file. A forthcoming change (already on the docker repo's orchestrator-refactor branch) makes the script auto-discover oracle output from `<hub>/target-data/` via `hubData` when `-d` is **omitted** (CSV, parquet, partitioned parquet), and `-d` will be deprecated. When testing that branch, omit `-d` to exercise auto-discovery; otherwise pass `-d "/hub/target-data/oracle-output.csv"`.
+About `-d`: it points the script at the oracle file. Newer versions of the script auto-discover oracle output from `<hub>/target-data/` via `hubData` (CSV, parquet, partitioned parquet) when `-d` is **omitted**, and treat `-d` as deprecated. If the checkout you are testing supports that (check the script's `--help` or its argument handling), omit `-d` to exercise auto-discovery; otherwise pass `-d "/hub/target-data/oracle-output.csv"`.
+
+#### Record versions
+
+Capture the dev image tag and the dev R package versions for the build report **before** teardown, while the container still exists (run inside it so it sees the in-container library):
+```bash
+echo "predevals dev image: $image"
+docker exec dev-evals Rscript -e 'message("R version: ", getRversion()); hub_pkgs <- grep("^hub|^Hub", installed.packages()[,"Package"], value = TRUE); for (pkg in hub_pkgs) { desc <- packageDescription(pkg); message(pkg, " ", desc$Version, " (", if (!is.null(desc$Repository)) desc$Repository else if (!is.null(desc$RemoteType)) paste0(desc$RemoteType, ": ", desc$RemoteRepo, "@", substr(desc$RemoteSha, 1, 7)) else if (!is.null(desc$Built)) "local" else "unknown", ")") }'
+```
 
 #### Clean up
 
@@ -500,15 +481,12 @@ echo "Score files: $(find $dash/data/evals/scores -name 'scores.csv' | wc -l)"
 echo "Options file: $(ls $dash/data/evals/predevals-options.json 2>/dev/null && echo 'exists' || echo 'MISSING')"
 ```
 
-Collect tool versions for the final build report. If the **Docker** path was used:
+Collect tool versions for the final build report. For the **Docker** path, record the image digest:
 ```bash
 echo "predevals image: $(docker inspect ghcr.io/hubverse-org/hubpredevalsdata-docker:latest --format='{{index .RepoDigests 0}}' 2>/dev/null)"
 ```
 
-If the **Native R** path was used:
-```bash
-Rscript -e 'message("R version: ", getRversion()); hub_pkgs <- grep("^hub|^Hub", installed.packages()[,"Package"], value = TRUE); for (pkg in hub_pkgs) { desc <- packageDescription(pkg); message(pkg, " ", desc$Version, " (", if (!is.null(desc$Repository)) desc$Repository else if (!is.null(desc$RemoteType)) paste0(desc$RemoteType, ": ", desc$RemoteRepo, "@", substr(desc$RemoteSha, 1, 7)) else if (!is.null(desc$Built)) "local" else "unknown", ")") }'
-```
+For the **Dev Docker** path, the dev image tag and the dev R package versions were captured before teardown (see the Dev Docker path's "Record versions" step).
 
 If exiting early due to an error during the evals step, skip ahead to the build report (section 7) and report what was collected so far.
 
@@ -604,10 +582,12 @@ Then patch the site-builder copy:
    cp "$predevals_path/dist/predevals.bundle.js" "$tmp_site_builder/static/resources/predevals.bundle.js"
    ```
 
-2. Update `predevals_interface.js` to import from the local bundle instead of the CDN:
+2. Update `predevals_interface.js` to import from the local bundle instead of the CDN. Match any CDN URL ending in `predevals.bundle.js` (the pinned tag changes over time, e.g. `@v1` to `@v2` or a SHA), then verify the rewrite landed so a missed match surfaces instead of silently rendering against the CDN:
    ```bash
-   sed -i '' 's|import App from "https://cdn.jsdelivr.net/gh/hubverse-org/predevals@v1/dist/predevals.bundle.js"|import App from "./predevals.bundle.js"|' \
+   sed -i '' -E 's|import App from "https://[^"]*/predevals\.bundle\.js"|import App from "./predevals.bundle.js"|' \
      "$tmp_site_builder/static/resources/predevals_interface.js"
+   grep -q 'import App from "./predevals.bundle.js"' "$tmp_site_builder/static/resources/predevals_interface.js" \
+     || echo "WARNING: import not repointed; inspect predevals_interface.js for the current import line"
    ```
 
 3. Add the bundle to `_quarto.yml` resources so Quarto copies it to the output site:
@@ -755,6 +735,6 @@ If a step fails, check the error output and match against these patterns:
 - **"docker: Cannot connect to the Docker daemon"**: Docker Desktop is not running. Tell the user to start Docker Desktop and wait for it to be ready, then retry.
 - **"No module named" or "command not found: ptc_generate"**: The virtual environment was not activated or the install failed. Re-run the venv activation (`source "$dash/.venv/bin/activate"`) and verify the install with `uv run pip show hub-dashboard-predtimechart`.
 - **Reusing cached Docker images**: After the first `docker pull`, images are cached locally. Subsequent runs skip downloading unchanged layers. To force a fresh pull, run `docker pull` again. To check cached images: `docker images | grep hubverse`.
-- **Dev predevals change "not showing" on the eval page (e.g. no transform columns/panel, single-scale table)**: Almost always one of two things, in this order. (1) Stale `_site`: `render.sh` merges into an existing `_site`, leaving the old CDN `predevals_interface.js` and no local `predevals.bundle.js`. Fix: `rm -rf "$dash/_site"` and re-render. (2) Browser cache of the ES-module bundle: hard-refresh (Cmd/Ctrl+Shift+R) or open in incognito; or serve with the no-cache server from Step 8. Confirm server-side first with the `diff`/`curl` checks in Step 8 so you don't chase a phantom — if the served bundle is the dev build and imports the local file, it's purely cache.
+- **Dev predevals change "not showing" on the eval page (e.g. no transform columns/panel, single-scale table)**: Almost always either a stale `_site` (Step 6) or browser cache of the ES-module bundle (Step 8). Work through the server-side `diff`/`curl` checks and fixes in Step 6 and then Step 8 before assuming a build problem.
 - **Dev Docker: `cannot open file 'scripts/update.R'` or renv installing into an empty library**: Something was bind-mounted over `/project`, shadowing the image's baked renv project. For smoke testing, mount nothing over `/project` — put the hub at `/hub`, the dashboard at `/dash`, and dev repos read-only under `/dev` (see the Dev Docker path). Mounting a repo at `/project` is only for the deliberate renv.lock-bump workflow and will write the host lockfile.
 - **Dev Docker: `create-predevals-data.R: command not found`**: The script is on `PATH` only in the production image, not the dev image. Invoke it with `Rscript scripts/create-predevals-data.R ...` (baked) or `Rscript /dev/hubPredEvalsData-docker/scripts/create-predevals-data.R ...` (mounted checkout).
