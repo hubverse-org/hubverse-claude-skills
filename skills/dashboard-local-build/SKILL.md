@@ -265,7 +265,7 @@ data/
     predevals-options.json
 _site/
   index.html
-  forecast.html
+  forecast.html       # Only if forecast data was generated
   eval.html           # Only if evals data was generated
   resources/
 ```
@@ -612,7 +612,7 @@ Use `hub-dash-site-builder:dev` instead of the published image in the `docker ru
 
 ### Verify outputs
 
-Check that expected pages exist. `index.html` and `forecast.html` should always be present. If predevals data was generated, `eval.html` should also exist.
+Check that expected pages exist. `index.html` is always present. `forecast.html` exists only if forecast data was generated (the site-builder discards the forecast page when the dashboard has no `predtimechart-config.yml`), and `eval.html` only if predevals data was generated.
 
 ```bash
 echo "Site directory: $(ls -d $dash/_site 2>/dev/null && echo 'exists' || echo 'MISSING')"
