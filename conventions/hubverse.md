@@ -16,12 +16,12 @@ Personal preferences go in the importing file. Where a personal instruction conf
 
 ## Hubverse index
 
-`hubverse-org/hubverse-llm-index` indexes every org repository, documentation page and linked resource. Use it to find where something lives instead of searching the org.
+`hubverse-org/hubverse-llm-index` indexes every org repository, documentation page and linked resource. Use it to find where something lives instead of searching the org. Read it from a local clone if there is one. Otherwise start from `https://raw.githubusercontent.com/hubverse-org/hubverse-llm-index/main/llms.txt`.
 
 - `overview.md`: concepts, how the pieces fit, which repository does what.
 - `llms.txt`: every repository, docs.hubverse.io and hubverse.io page, and each package site's own `llms.txt`.
 - `catalog/repos.json`: per repository, the repo, issues, README, docs and `llms.txt` URLs.
-- `local/clones.md`: which repositories are cloned locally, and where. This file is specific to each machine.
+- `local/clones.md`: which repositories are cloned locally, and where. It exists only in a local clone, is not committed, and is generated with `python3 scripts/local_clones.py <workspace>`, where `<workspace>` is the directory that holds the hubverse clones.
 
 ## Branching
 

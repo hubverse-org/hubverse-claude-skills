@@ -43,6 +43,16 @@ To load them, add this line to your personal `~/.claude/CLAUDE.md`, or to a `CLA
 
 Put personal preferences in that same file, alongside the import. They take precedence over the shared conventions.
 
+The conventions point Claude to [hubverse-llm-index](https://github.com/hubverse-org/hubverse-llm-index) to find where things live in the org. Claude can read it from GitHub, but a local clone also tells Claude which repositories you have cloned. Clone it into the directory that holds your hubverse clones, then generate the list of clones:
+
+```bash
+cd <workspace>
+git clone git@github.com:hubverse-org/hubverse-llm-index.git
+python3 hubverse-llm-index/scripts/local_clones.py .
+```
+
+Re-run the last command after cloning more repositories.
+
 ## Adding a new skill
 
 1. Create a new directory under `skills/` with a `SKILL.md` file
