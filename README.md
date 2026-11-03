@@ -31,6 +31,18 @@ To update skills, pull the latest changes:
 cd ~/hubverse-claude-skills && git pull
 ```
 
+## Shared conventions
+
+[`conventions/hubverse.md`](conventions/hubverse.md) holds the hubverse conventions for Claude Code: code style, branching, PRs and issues, reviewing PRs, the project board, NEWS entries, comments and documentation, and testing.
+
+To load them, add this line to your personal `~/.claude/CLAUDE.md`, or to a `CLAUDE.md` in the directory that holds your hubverse clones:
+
+```
+@~/hubverse-claude-skills/conventions/hubverse.md
+```
+
+Put personal preferences in that same file, alongside the import. They take precedence over the shared conventions.
+
 ## Adding a new skill
 
 1. Create a new directory under `skills/` with a `SKILL.md` file
