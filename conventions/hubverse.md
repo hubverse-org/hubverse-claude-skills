@@ -36,7 +36,21 @@ Personal preferences go in the importing file. Where a personal instruction conf
 
 - Before opening a PR in an R package, run these on the changed R files and fix what they report: `air format <files>`, `lintr::lint("<file>")` for each file, and the package tests (`devtools::test()`). hubverse packages carry `air.toml` and `.lintr`, so both tools pick up the repository's configuration.
 - Always draft the full PR/issue **title and body first and show them to the user for review**. Only open (`gh pr create` / `gh issue create`) after the user confirms the actual text. Treat "open the PR/issue" as approval to proceed **once the user has seen the body**, not a licence to publish text they have not read. A PR/issue is outward-facing (visible to the team, tags people) and hard to walk back.
-- A PR body has, in this order and only as far as the change warrants: what changed and why (always), opening with a sentence on the problem being tackled, where there is one, and how the PR addresses it; **what to check**, naming the one or two places where a reviewer has to exercise judgement and spelling out the behaviour change and its consequences (when there is one); **tests**, saying what they assert and, for a bug fix, that they fail on `main`; and **out of scope**, as links to filed issues, never as prose to-do lists. Do not walk the diff file by file; the diff view does that. A trivial PR gets the first part only.
+- A PR body has, in this order and only as far as the change warrants:
+  - **What changed and why** (always). Open with a sentence on the problem being tackled, where there is one, and how the PR addresses it.
+  - **How the pieces fit**, when the change adds or reshapes more than a couple of functions:
+    - the object or entry point the change revolves around, and its shape;
+    - a table of new functions, each with what it does and what uses it;
+    - a table of existing functions whose role changed, with before and after;
+    - a call tree showing how they connect;
+    - a reading order.
+
+    This maps the change, not the files. Describe mechanical changes repeated across files once, in the reading order.
+  - **What to check**: the places where a reviewer has to exercise judgement, each with the question to answer, and any behaviour change and its consequences.
+  - **Tests**: what they assert, and for a bug fix, that they fail on `main`.
+  - **Out of scope**: links to filed issues, never prose to-do lists.
+
+  Do not walk the diff file by file. The diff view does that. A trivial PR gets the first part only.
 - **Inline comments on your own PR** give reviewers implementation context where it reads best next to the code: why a piece is shaped the way it is, how two changed pieces connect, or where to start reading. Unlike code comments, they may explain what changed and why. On a larger change, they let a reviewer skim the code and stop only where it matters. Use them sparingly, on the few places that carry the change, and do not repeat the PR body. Draft them with the PR body for the user to review, then post each with:
   ```sh
   gh api repos/{owner}/{repo}/pulls/{number}/comments \
@@ -61,7 +75,7 @@ A human review spends its time where judgement matters most, and leaves line-by-
 2. **Review documentation with two hats on.** Spend the most time on user-facing documentation: roxygen docs, vignettes, NEWS entries, and error and warning messages. Read them as a user would, and check that what the user sees is clear and sensible (see NEWS / changelog entries). Then read developer-facing documentation, such as code comments and `@noRd` docs, as the next person to edit the code (see Comments and documentation).
 3. **Leave detailed code review to an agent review**, for example Claude Code's `/code-review`. The reviewer still needs to understand what each piece of the change is and why it is there, even when they do not check it line by line. On larger changes, skim the code and read closely only where the author's inline comments point.
 
-When asked to help with a review, follow the same order: summarise the change and its pieces first, then review the documentation, then the code.
+When asked to help with a review, write a reviewer's guide in the same order. Start with the change and how its pieces fit, as a PR body's "How the pieces fit" section does, and build it if the PR body lacks one. Then cover documentation, user-facing first, with the question the reviewer has to answer for each. Then code, separating what to read closely, with `file:line` references, from what to skim. End with the decisions the reviewer has to make.
 
 ## Responding to reviews
 
