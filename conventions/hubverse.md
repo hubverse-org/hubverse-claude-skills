@@ -160,4 +160,8 @@ Shorter is usually right. If a rewrite makes a comment longer, re-read it rather
 
 ## Testing (R)
 
+- Never compute an expected value with the code under test (the same function, algorithm or schema). Use literals or fixtures.
+- After adding a test for a change, break the code it covers once and confirm the test fails.
+- Before opening a PR that replaces or rewrites tests, pair every removed snapshot or assertion with its replacement and record a verdict for each.
+- Watch for assertions weaker than they look: multi-class `expect_s3_class()` without `exact = TRUE`, `ignore_attr`, checks of `head()` or of unique values only, `expect_true(length(x) > 0)`, warnings no longer asserted.
 - Before using `testthat::local_mocked_bindings()` (or `with_mocked_bindings()`), read its docs / `vignette("mocking", package = "testthat")`. Do **not** reach for `.package = "otherpkg"` to mock a dependency called via `otherpkg::fun()`. The docs discourage it (it modifies a namespace we don't own and affects all callers). Instead import the function (`@importFrom otherpkg fun`), call it unqualified, and mock it in our own namespace with no `.package`.
