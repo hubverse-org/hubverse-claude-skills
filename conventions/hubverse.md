@@ -13,6 +13,8 @@ Personal preferences go in the importing file. Where a personal instruction conf
 - R code follows the [tidyverse style guide](https://style.tidyverse.org) and the [tidyverse design principles](https://design.tidyverse.org). Where a repository's established conventions differ, follow the repository.
 - [Make inputs explicit](https://design.tidyverse.org/inputs-explicit.html). Do not read environment variables or options inside a function body. Take them as arguments, with the read in the default: `path = Sys.getenv("GITHUB_STEP_SUMMARY")`. Note that top-level constants defined alongside the functions that use them are not hidden inputs.
 - **Dispatch on hubverse S3 classes rather than checking for them.** A function that only accepts one hubverse class (such as `model_out_tbl` or `config`), for example a coercion to a subclass or an operation defined for that class, is an S3 generic with a method for the class and a `default` method that errors and points to the coercion function. Do not write an `inherits()` check at the top of a plain function. A method can still validate its input, because dispatch checks the class, not the object's validity. When introducing a hubverse class, decide at the same time which functions dispatch on it, so that other packages can add methods without changing the original functions.
+- **Enumerate the values you branch on.** When code branches on a value from the config or the schema, such as an output type or a sample ID `type`, handle each allowed value explicitly and error on any other. Use `switch()` with an erroring default rather than `if`/`else`, so that a value added to the schema later fails loudly.
+- **Fix the pattern, not the instance.** When fixing a bug, search the package for the same pattern and fix it everywhere, or file an issue for the rest and link it from the PR.
 - Where these conventions differ from the [posit-dev/skills](https://github.com/posit-dev/skills) R skills, these conventions take precedence.
 
 ## Hubverse index
@@ -36,6 +38,7 @@ Personal preferences go in the importing file. Where a personal instruction conf
 ## Opening PRs and issues
 
 - Before opening a PR in an R package, run these on the changed R files and fix what they report: `air format <files>`, `lintr::lint("<file>")` for each file, and the package tests (`devtools::test()`). hubverse packages carry `air.toml` and `.lintr`, so both tools pick up the repository's configuration.
+- Before asking for review, run the [`pre-review`](../skills/pre-review/SKILL.md) skill. It runs the checks that apply to the change and three independent agent reviews, and reports the evidence the PR body needs.
 - Always draft the full PR/issue **title and body first and show them to the user for review**. Only open (`gh pr create` / `gh issue create`) after the user confirms the actual text. Treat "open the PR/issue" as approval to proceed **once the user has seen the body**, not a licence to publish text they have not read. A PR/issue is outward-facing (visible to the team, tags people) and hard to walk back.
 - A PR body has, in this order and only as far as the change warrants:
   - **What changed and why** (always). Open with a sentence on the problem being tackled, where there is one, and how the PR addresses it.
@@ -49,7 +52,8 @@ Personal preferences go in the importing file. Where a personal instruction conf
 
     This maps the change, not the files. Describe mechanical changes repeated across files once, in the reading order.
   - **What to check**: the places where a reviewer has to exercise judgement, each with the question to answer, and any behaviour change and its consequences.
-  - **Tests**: what they assert, and for a bug fix, that they fail on `main`.
+  - **Tests and verification**: what the tests assert, and for a bug fix, that they fail on `main`. Back every claim the PR makes with evidence in one or two lines: the inputs and paths covered, results on real hubs for stricter behaviour, benchmarks for each path whose cost changes, and the merge and release order across repositories.
+  - **Who needs to know**, when hub administrators, modelers or maintainers of downstream tools have to hear about the change: what they will notice, what they need to do, and a link to the announcement draft.
   - **Out of scope**: links to filed issues, never prose to-do lists.
 
   Do not walk the diff file by file. The diff view does that. A trivial PR gets the first part only.
@@ -131,7 +135,7 @@ gh project item-edit \
 
 ## Comments and documentation
 
-Comments and docs are read by people who did not write the code, including colleagues who do not speak English as a first language. Write for them.
+Comments and docs are read by people who did not write the code, including colleagues who do not speak English as a first language. Write for them. The rules below apply to PR bodies, issues and posters too.
 
 Clear and concise, but also **professional**: this is software documentation, and it should read like the reference docs and source comments of a well maintained package. Plain does not mean chatty or breezy. No jokes, no filler, no addressing the reader as "you" where a statement about the code will do, no rhetorical questions, no exclamation marks. Prefer the vocabulary a developer would expect to see over an everyday paraphrase of it, but only where that vocabulary is the accurate word rather than decoration.
 
@@ -139,6 +143,8 @@ Clear and concise, but also **professional**: this is software documentation, an
 - **Explain a chain as a chain.** When several facts have to connect before a consequence makes sense, give each its own sentence and keep them in order: the situation, then the mechanism, then what follows. Do not open with the mechanism and assert the outcome, leaving the reader to reconstruct the middle. Put the fact the code actually depends on last, where it lands hardest.
 - **Mark asides with "Note".** A comment often carries two registers: what a reader must know to use or change the code, and a detail that explains an obscure corner. Lead with the fundamental part, unqualified, and open the aside with "Note that" so the reader can see at a glance which is which and skip it if they do not need it. Do not open the main point with "Note", or the signal stops meaning anything.
 - **Concrete over abstract.** Name the thing. "Leave out derived task IDs" beats "a derived value cannot separate rows the others leave together".
+- **Show a realistic example before the rule.** When a behaviour depends on data, such as samples, compound task ID sets or config, give a small example from a case a hub actually has, then state the general rule.
+- **Use hubverse terms as docs.hubverse.io defines them.** For example, a compound task ID set is compound, and a task ID belongs to it or not. Define any other term, label or shorthand the first time it appears.
 - **Watch pronouns.** If "it", "they" or "them" could point at more than one thing in the sentence, repeat the noun instead.
 - **Say why, not what.** The code already says what it does. A comment earns its place by giving a reason, a constraint, or a consequence that is not visible from the code. Identify the feature of the code being explained, then say as concisely as possible why it is that way.
 - **Do not narrate the refactor.** A comment describes the code as it is now, not what it replaced, what it used to do, or what was tried. Describe current behaviour only where it might confuse a reader and needs additional context. Context about the change itself belongs in the PR body or an inline PR comment.
@@ -165,5 +171,7 @@ Shorter is usually right. If a rewrite makes a comment longer, re-read it rather
 - Never compute an expected value with the code under test (the same function, algorithm or schema). Use literals or fixtures.
 - After adding a test for a change, break the code it covers once and confirm the test fails.
 - Before opening a PR that replaces or rewrites tests, pair every removed snapshot or assertion with its replacement and record a verdict for each.
+- Test the paths that callers take, not only the default one. For each new or changed argument of an exported function, test it omitted, as an explicit `NULL`, combined with its alternatives, and malformed. Confirm that existing skips and early returns are still reached.
+- Keep test fixtures valid. A hub config built for a test must pass `hubAdmin::validate_config()`, unless the test is about an invalid config.
 - Watch for assertions weaker than they look: multi-class `expect_s3_class()` without `exact = TRUE`, `ignore_attr`, checks of `head()` or of unique values only, `expect_true(length(x) > 0)`, warnings no longer asserted.
 - Before using `testthat::local_mocked_bindings()` (or `with_mocked_bindings()`), read its docs / `vignette("mocking", package = "testthat")`. Do **not** reach for `.package = "otherpkg"` to mock a dependency called via `otherpkg::fun()`. The docs discourage it (it modifies a namespace we don't own and affects all callers). Instead import the function (`@importFrom otherpkg fun`), call it unqualified, and mock it in our own namespace with no `.package`.
