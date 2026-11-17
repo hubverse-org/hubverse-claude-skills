@@ -20,7 +20,12 @@ Arguments: $ARGUMENTS. The first is the base ref or the PR number. Default to th
 
 Decide which of these apply from the diff, the issue and the PR body. For each one that applies, do it and record the evidence. For each one that does not apply, say why in one line.
 
-1. **Claims of coverage.** List every input, path and environment the change or its PR body claims to handle. Examples are "every hub", "each schema version", direct calls as well as calls through `validate_model_data()`, the `error = FALSE` path that the real caller uses, `workflow_dispatch` runs and checkouts from a fork. Confirm that a test or a recorded run exercises each one. Run or test the missing ones, or narrow the claim.
+1. **Claims of coverage.** List every input, path and environment the change or its PR body claims to handle, for example:
+   - inputs: "every hub", "each schema version";
+   - paths: direct calls as well as calls through a wrapper such as `validate_model_data()`, and the argument values the real caller passes (such as `error = FALSE`) rather than only the defaults;
+   - environments: `workflow_dispatch` runs and checkouts from a fork.
+
+   Confirm that a test or a recorded run exercises each one. Run or test the missing ones, or narrow the claim.
 2. **New or changed arguments of exported functions.** Test each argument omitted, passed as an explicit `NULL`, combined with each alternative argument, and malformed (wrong class, mismatched with the other inputs, missing a required column). Confirm that every skip and early return in the function is still reached.
 3. **Stricter behaviour.** When the change can reject input that passed before, run the new rule against real hub data and report how many files fail, by hub. This applies to bug fixes too, such as starting to enforce a rule the config always declared: the data may already break it. Name the producer of each failing file, such as a team or a hub workflow, so it can be fixed before the release. Use local clones (see `local/clones.md` in the hubverse index), shallow sparse clones of `model-output/` and `hub-config/`, or a hub's public S3 mirror for large hubs. Cite any existing survey, such as one in a poster, in the PR body.
 4. **Dependencies on other repositories.** For each change in another repository that this one needs, check whether it is released, not just merged. Say what a consumer that tracks `@main` or the latest release gets in the meantime, and state the merge and release order in the PR body.
