@@ -54,7 +54,7 @@ Personal preferences go in the importing file. Where a personal instruction conf
   - **What to check**: the places where a reviewer has to exercise judgement, each with the question to answer, and any behaviour change and its consequences.
   - **Tests and verification**: what the tests assert, and for a bug fix, that they fail on `main`. Back every claim the PR makes with evidence in one or two lines: the inputs and paths covered, results on real hubs for stricter behaviour, benchmarks for each path whose cost changes, and the merge and release order across repositories.
   - **Who needs to know**, when hub administrators, modelers or maintainers of downstream tools have to hear about the change: what they will notice, what they need to do, and a link to the announcement draft.
-  - **Out of scope**: links to filed issues, never prose to-do lists.
+  - **Out of scope**: links to filed issues. Do not list future work as prose.
 
   Do not walk the diff file by file. The diff view does that. A trivial PR gets the first part only.
 - **Inline comments on your own PR** give reviewers implementation context where it reads best next to the code: why a piece is shaped the way it is, how two changed pieces connect, or where to start reading. Unlike code comments, they may explain what changed and why. On a larger change, they let a reviewer skim the code and stop only where it matters. Use them sparingly, on the few places that carry the change, and do not repeat the PR body. Draft them with the PR body for the user to review, then post each with:
