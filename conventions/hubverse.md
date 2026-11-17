@@ -12,6 +12,7 @@ Personal preferences go in the importing file. Where a personal instruction conf
 
 - R code follows the [tidyverse style guide](https://style.tidyverse.org) and the [tidyverse design principles](https://design.tidyverse.org). Where a repository's established conventions differ, follow the repository.
 - [Make inputs explicit](https://design.tidyverse.org/inputs-explicit.html). Do not read environment variables or options inside a function body. Take them as arguments, with the read in the default: `path = Sys.getenv("GITHUB_STEP_SUMMARY")`. Note that top-level constants defined alongside the functions that use them are not hidden inputs.
+- **Dispatch on hubverse S3 classes rather than checking for them.** A function that only accepts one hubverse class (such as `model_out_tbl` or `config`), for example a coercion to a subclass or an operation defined for that class, is an S3 generic with a method for the class and a `default` method that errors and points to the coercion function. Do not write an `inherits()` check at the top of a plain function. A method can still validate its input, because dispatch checks the class, not the object's validity. When introducing a hubverse class, decide at the same time which functions dispatch on it, so that other packages can add methods without changing the original functions.
 - Where these conventions differ from the [posit-dev/skills](https://github.com/posit-dev/skills) R skills, these conventions take precedence.
 
 ## Hubverse index
@@ -38,11 +39,12 @@ Personal preferences go in the importing file. Where a personal instruction conf
 - Always draft the full PR/issue **title and body first and show them to the user for review**. Only open (`gh pr create` / `gh issue create`) after the user confirms the actual text. Treat "open the PR/issue" as approval to proceed **once the user has seen the body**, not a licence to publish text they have not read. A PR/issue is outward-facing (visible to the team, tags people) and hard to walk back.
 - A PR body has, in this order and only as far as the change warrants:
   - **What changed and why** (always). Open with a sentence on the problem being tackled, where there is one, and how the PR addresses it.
-  - **How the pieces fit**, when the change adds or reshapes more than a couple of functions:
+  - **How the pieces fit**, when the change adds or reshapes more than a couple of functions, or when what the code does depends on several conditions in combination:
     - the object or entry point the change revolves around, and its shape;
     - a table of new functions, each with what it does and what uses it;
     - a table of existing functions whose role changed, with before and after;
     - a call tree showing how they connect;
+    - a condition tree, where the outcome depends on several conditions in combination. Show each path from the conditions to its outcome (the error, value or action), and mark the paths the change adds or alters. Follow it with a short list of what happened on the altered paths before the change;
     - a reading order.
 
     This maps the change, not the files. Describe mechanical changes repeated across files once, in the reading order.
@@ -75,7 +77,7 @@ A human review spends its time where judgement matters most, and leaves line-by-
 2. **Review documentation with two hats on.** Spend the most time on user-facing documentation: roxygen docs, vignettes, NEWS entries, and error and warning messages. Read them as a user would, and check that what the user sees is clear and sensible (see NEWS / changelog entries). Then read developer-facing documentation, such as code comments and `@noRd` docs, as the next person to edit the code (see Comments and documentation).
 3. **Leave detailed code review to an agent review**, for example Claude Code's `/code-review`. The reviewer still needs to understand what each piece of the change is and why it is there, even when they do not check it line by line. On larger changes, skim the code and read closely only where the author's inline comments point.
 
-When asked to help with a review, write a reviewer's guide in the same order. Start with the change and how its pieces fit, as a PR body's "How the pieces fit" section does, and build it if the PR body lacks one. Then cover documentation, user-facing first, with the question the reviewer has to answer for each. Then code, separating what to read closely, with `file:line` references, from what to skim. End with the decisions the reviewer has to make.
+When asked to help with a review, write a reviewer's guide in the same order. Start with the change and how its pieces fit, as a PR body's "How the pieces fit" section does, and build it if the PR body lacks one. Where the change's behaviour depends on several conditions in combination, include a condition tree as described there, rather than a table that names a group of cases without saying which. Then cover documentation, user-facing first, with the question the reviewer has to answer for each. Then code, separating what to read closely, with `file:line` references, from what to skim. End with the decisions the reviewer has to make.
 
 ## Responding to reviews
 
