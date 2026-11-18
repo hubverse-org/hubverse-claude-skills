@@ -37,6 +37,7 @@ Decide which of these apply from the diff, the issue and the PR body. For each o
 8. **User-facing additions.** Check that `NEWS.md` covers each user-visible change. Check that new exported functions link related ones with `@seealso`, and that related functions link back.
 9. **Notification.** Decide whether hub administrators, modelers or maintainers of downstream tools need to hear about the change before or at release. They do when the change makes files fail that passed before, changes what an output or file contains, or needs anyone to act. A scan of some hubs does not cover every hub, so a change that can fail files anywhere needs an announcement even when the scan found no failures. If it does, draft an entry for the Announcements category of the org Discussions (https://github.com/orgs/hubverse-org/discussions) with a "What you need to do" row for each audience, and a short email for the mailing list (https://groups.io/g/hubverse) that links to it. Say in the PR body that the change needs announcing.
 10. **Repository history.** For each line the change removes or loosens, such as a version pin, a guard or a skipped test, read its `git log -L` or `git blame` to find why it was added. Keep it unless that reason no longer holds.
+11. **Documented behaviour.** When documentation states what the software does, build each example it gives and run it against the released or `main` version. Confirm every stated outcome and every count in the text or a table. Check claims about allowed values against the schema or the function's arguments.
 
 ## 3. Run three independent reviews
 
@@ -44,7 +45,7 @@ Spawn three agents in parallel with the Agent tool. Give each one only the input
 
 **Correctness.**
 
-> Review the change in `<repo>` against `<base>` for correctness. The issue it resolves is `<issue>`, and the related PRs are `<PRs>`. Find bugs that a real caller or a real hub would hit. Try caller-shaped inputs: an argument forwarded as an explicit `NULL`, both or neither of a pair of alternative arguments, an object built from a different table or round, and a missing column. Check every skip and early-return path, every error path, and what the user sees when an internal step fails. Check that information reported in more than one place, such as a message and a table, agrees. Look for the same fault in code the change did not touch. Run code to confirm a finding wherever you can, and say which findings you ran and which come from reading. Report each finding with `file:line`, the input that triggers it, and the wrong result.
+> Review the change in `<repo>` against `<base>` for correctness. The issue it resolves is `<issue>`, and the related PRs are `<PRs>`. Find bugs that a real caller or a real hub would hit. Try caller-shaped inputs: an argument forwarded as an explicit `NULL`, both or neither of a pair of alternative arguments, an object built from a different table or round, and a missing column. Check every skip and early-return path, every error path, and what the user sees when an internal step fails. Check that information reported in more than one place, such as a message and a table, agrees. Look for the same fault in code the change did not touch. For documentation, check each stated rule against every example on the page and against the software. A rule that an example contradicts is wrong. Run code to confirm a finding wherever you can, and say which findings you ran and which come from reading. Report each finding with `file:line`, the input that triggers it, and the wrong result.
 
 **Parsimony.**
 
@@ -55,8 +56,11 @@ Spawn three agents in parallel with the Agent tool. Give each one only the input
 > You are a hubverse team member who has not followed this work. Read the PR body `<path>`, then the user-facing documentation the change adds or edits (roxygen, vignettes, NEWS, error and warning messages), then the code comments. List:
 > - every term that is used before it is defined, including benchmark labels and shorthand for functions;
 > - every hubverse term used differently from how docs.hubverse.io defines it, for example calling a task ID "compound" when the compound task ID set is what the docs define;
+> - every everyday word a hubverse reader could take as a hubverse term or a different action, for example "model" where `model_id` is meant, or "evaluate" where "validate" could be read;
 > - every passage you had to read twice, with what you understood it to mean;
-> - every rule or behaviour explained in the abstract, with no realistic example from an actual hub;
+> - every rule or behaviour explained in the abstract, with no minimal, realistic example;
+> - every example that starts before the context it depends on, such as which hub, which configuration and who is acting;
+> - every rule stated more broadly than the examples on the same page allow;
 > - every passage longer than it needs to be, and what it would say in one or two sentences;
 > - every claim that the PR body does not back with evidence.
 > Quote the passage for each finding. Rank the findings by how much each one would slow a reviewer down, and report at most the top 10.
