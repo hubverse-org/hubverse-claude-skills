@@ -86,6 +86,8 @@ When asked to help with a review, write a reviewer's guide in the same order. St
 ## Responding to reviews
 
 - **A reviewer's question is answered in the reply, or with a very concise note in the code. Never with paragraphs.** Add a detailed comment only when the review uncovered significant difficulty in understanding the code, not because a question was asked. Confusion about an internal function is best addressed with `@noRd` roxygen documentation on that function, not with block comments at the call site.
+- **A misreading of correct text is a clarity bug.** Fix the text, and explain the intended meaning in the reply.
+- **When a comment can be read two ways, write a reply that holds under both.** When explaining why something happens, start from its cause, such as the configuration or input that drives it, before the specific case.
 
 ## Merging PRs
 
@@ -143,9 +145,12 @@ Clear and concise, but also **professional**: this is software documentation, an
 - **Explain a chain as a chain.** When several facts have to connect before a consequence makes sense, give each its own sentence and keep them in order: the situation, then the mechanism, then what follows. Do not open with the mechanism and assert the outcome, leaving the reader to reconstruct the middle. Put the fact the code actually depends on last, where it lands hardest.
 - **Mark asides with "Note".** A comment often carries two registers: what a reader must know to use or change the code, and a detail that explains an obscure corner. Lead with the fundamental part, unqualified, and open the aside with "Note that" so the reader can see at a glance which is which and skip it if they do not need it. Do not open the main point with "Note", or the signal stops meaning anything.
 - **Concrete over abstract.** Name the thing. "Leave out derived task IDs" beats "a derived value cannot separate rows the others leave together".
-- **Show a realistic example before the rule.** When a behaviour depends on data, such as samples, compound task ID sets or config, give a small example from a case a hub actually has, then state the general rule.
+- **Show a minimal, realistic example before the rule.** First set the scene: the configuration and who is doing what. Then give the smallest realistic example that shows the behaviour, with only the rows, task IDs and values it needs. The case that prompted the change is a good source for it, cut down to what the behaviour needs. Then state the rule in general terms, not in the terms of that case.
 - **Use hubverse terms as docs.hubverse.io defines them.** For example, a compound task ID set is compound, and a task ID belongs to it or not. Define any other term, label or shorthand the first time it appears.
-- **State data properties as what the rows show.** Not "a sample holds a single value of `horizon`" but "a sample has rows for only one `horizon`". Vague verbs such as "holds", "takes" or "carries" leave the reader to work out which rows and which values are meant.
+- **State data properties as what the rows show.** Not "a sample holds a single value of `horizon`" but "a sample has rows for only one `horizon`". Vague verbs such as "holds", "takes" or "carries" leave the reader to work out which rows and which values are meant. Use a different verb for each relation, such as "has rows for" and "is joint across". The same noun in both roles reads as circular.
+- **Claim only what the software does.** Data does not "declare" or "mark" anything, so say what the tools do with it. Avoid "only", "never" and "always" unless the software enforces them.
+- **State current limits, not workarounds for gaps an open issue will change.** Link the issue under "Out of scope" in the PR body.
+- **Put an easy mistake in a caution box, apart from the rule.** Give the box a title that names the mistake, and aim it at one audience. Say why it is a mistake and, where it applies, why no check catches it.
 - **Watch pronouns.** If "it", "they" or "them" could point at more than one thing in the sentence, repeat the noun instead.
 - **Say why, not what.** The code already says what it does. A comment earns its place by giving a reason, a constraint, or a consequence that is not visible from the code. Identify the feature of the code being explained, then say as concisely as possible why it is that way.
 - **Do not narrate the refactor.** A comment describes the code as it is now, not what it replaced, what it used to do, or what was tried. Describe current behaviour only where it might confuse a reader and needs additional context. Context about the change itself belongs in the PR body or an inline PR comment.
@@ -165,7 +170,7 @@ As a chain, marked as an aside, situation first and the load-bearing fact last:
 
 > Note that a modeling task that does not use a task ID either lists it as null in the config or leaves it out, and config processing turns the expected value of both situations into `NA`. Correctly submitted model output carries `NA` in that column too. `%in%` matches `NA` to `NA`, unlike `==`, so those rows match.
 
-Shorter is usually right. If a rewrite makes a comment longer, re-read it rather than continuing. A comment rewritten more than twice is usually one that should not exist.
+Shorter is usually right. If a rewrite makes a comment longer, re-read it rather than continuing. A comment rewritten more than twice is usually one that should not exist. Refer back to an earlier explanation instead of restating it.
 
 ## Testing (R)
 
