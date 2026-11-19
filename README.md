@@ -10,6 +10,7 @@ Shared [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skill
 | [`dashboard-smoke-test`](skills/dashboard-smoke-test) | Set up `smoke-test` branches across dashboard tool repos so a skill can be tested against dev versions, then verify and clean up. |
 | [`hubverse-release`](skills/hubverse-release) | Walk through the hubverse R package release checklist end to end (version bump, NEWS, release branch and PR, optional CRAN prep, tag, GitHub release, post-release dev bump). |
 | [`pre-review`](skills/pre-review) | Verify a change before asking for review: run the checks that apply, then independent correctness, parsimony and cold-reader reviews by fresh agents, and report the evidence for the PR body. |
+| [`respond-to-review`](skills/respond-to-review) | Answer review comments on your own PR: triage each comment, fix the work, re-read the rewritten parts with a fresh agent, and draft the replies, inline where an answer belongs to one line and in the main reply for wider changes. |
 | [`explore-hub`](skills/explore-hub) | A prototype skill to help hub administrators explore a hub. See [explore-hub/README.md](explore-hub/README.md) for details. |
 
 ## Setup
