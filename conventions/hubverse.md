@@ -29,7 +29,7 @@ Personal preferences go in the importing file. Where a personal instruction conf
 ## Branching
 
 - Branch off `main` (synced to remote first: `git fetch` / pull latest) by default, unless a different branching approach has been agreed for a given repo.
-- Branch naming convention: `initials/description/issue_no` (e.g. `ak/enable-cloud-mirroring/7`). Do **not** use `feat/` / `fix/` style prefixes.
+- Branch naming convention: `initials/description/issue_no` (e.g. `ak/enable-cloud-mirroring/7`). A small change with no issue drops the number (`ak/examples-conventions`), and its PR carries the context. Do **not** use `feat/` / `fix/` style prefixes.
 
 ## Committing
 
@@ -144,12 +144,13 @@ Clear and concise, but also **professional**: this is software documentation, an
 - **One idea per sentence.** Do not stack subordinate clauses.
 - **Explain a chain as a chain.** When several facts have to connect before a consequence makes sense, give each its own sentence and keep them in order: the situation, then the mechanism, then what follows. Do not open with the mechanism and assert the outcome, leaving the reader to reconstruct the middle. Put the fact the code actually depends on last, where it lands hardest.
 - **Mark asides with "Note".** A comment often carries two registers: what a reader must know to use or change the code, and a detail that explains an obscure corner. Lead with the fundamental part, unqualified, and open the aside with "Note that" so the reader can see at a glance which is which and skip it if they do not need it. Do not open the main point with "Note", or the signal stops meaning anything.
-- **Concrete over abstract.** Name the thing. "Leave out derived task IDs" beats "a derived value cannot separate rows the others leave together".
-- **Show a minimal, realistic example before the rule.** First set the scene: the configuration and who is doing what. Then give the smallest realistic example that shows the behaviour, with only the rows, task IDs and values it needs. The case that prompted the change is a good source for it, cut down to what the behaviour needs. Then state the rule in general terms, not in the terms of that case.
-- **Use hubverse terms as docs.hubverse.io defines them.** For example, a compound task ID set is compound, and a task ID belongs to it or not. Define any other term, label or shorthand the first time it appears.
+- **Concrete over abstract.** Name the thing. "Leave out derived task IDs" beats "a derived value cannot separate rows the others leave together". In an example, use the names it uses (`horizon`, `location`) rather than set algebra such as "the task IDs the set leaves out".
+- **Show a minimal, realistic example before the rule.** First set the scene: the configuration and who is doing what. Then give the smallest realistic example that shows the behaviour, with only the rows, task IDs and values it needs. The case that prompted the change is a good source for it, cut down to what the behaviour needs. Then state the rule in general terms, not in the terms of that case. Where the general form would need set algebra, state the rule in the terms of the example instead.
+- **Use hubverse terms as docs.hubverse.io defines them.** For example, a compound task ID set is compound, and a task ID belongs to it or not. Prefer a term the page already uses over a new one. Define any other term, label or shorthand the first time it appears.
 - **State data properties as what the rows show.** Not "a sample holds a single value of `horizon`" but "a sample has rows for only one `horizon`". Vague verbs such as "holds", "takes" or "carries" leave the reader to work out which rows and which values are meant. Use a different verb for each relation, such as "has rows for" and "is joint across". The same noun in both roles reads as circular.
 - **Claim only what the software does.** Data does not "declare" or "mark" anything, so say what the tools do with it. Avoid "only", "never" and "always" unless the software enforces them.
 - **State current limits, not workarounds for gaps an open issue will change.** Link the issue under "Out of scope" in the PR body.
+- **Do not describe planned behaviour.** Write each sentence so that it stays true when the planned change ships. The direction belongs in the PR body.
 - **Put an easy mistake in a caution box, apart from the rule.** Give the box a title that names the mistake, and aim it at one audience. Say why it is a mistake and, where it applies, why no check catches it.
 - **Watch pronouns.** If "it", "they" or "them" could point at more than one thing in the sentence, repeat the noun instead.
 - **Say why, not what.** The code already says what it does. A comment earns its place by giving a reason, a constraint, or a consequence that is not visible from the code. Identify the feature of the code being explained, then say as concisely as possible why it is that way.
@@ -171,6 +172,20 @@ As a chain, marked as an aside, situation first and the load-bearing fact last:
 > Note that a modeling task that does not use a task ID either lists it as null in the config or leaves it out, and config processing turns the expected value of both situations into `NA`. Correctly submitted model output carries `NA` in that column too. `%in%` matches `NA` to `NA`, unlike `==`, so those rows match.
 
 Shorter is usually right. If a rewrite makes a comment longer, re-read it rather than continuing. A comment rewritten more than twice is usually one that should not exist. Refer back to an earlier explanation instead of restating it.
+
+### Sequences of examples
+
+When a page or section needs several examples, they should read as one story.
+
+- **One running fixture.** Set up one configuration at the start of the section and use it in every example. Each extra fixture is something more the reader has to hold.
+- **Start with the plain case, then change one thing at a time.** Say what changed from the earlier example, such as "the same rows, but a new sample ID at each horizon", so the difference carries the point.
+- **Order examples by what they depend on.** A realistic case that combines two ideas comes after both.
+- **Choose a base that later examples can extend**, such as a location or horizon the first example does not need yet.
+- **Show a mechanism as data, or as a diagram of its steps.** Show what each step takes in and what it produces, such as a table with the column a step adds, rather than describing the steps.
+- **Move supporting detail to the margin, where the format has one**, such as `{margin}` in hubDocs. A running summary or a side note that helps but interrupts the main thread goes there, with a title.
+- **Give each visual encoding one meaning, and state it in the caption.** A colour, border style or word stands for one thing only.
+- **Reset the scene where a reader may arrive without the setup**, such as a subsection that other pages link to. Do it in one clause, without repeating the setup.
+- **Check each example against its source and run it.** An example adapted from a real case must still match that case, and every outcome the text states must be what the software returns.
 
 ## Testing (R)
 

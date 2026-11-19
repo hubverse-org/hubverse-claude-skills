@@ -8,6 +8,8 @@ Verify the change in the current repository before it goes to human review. Huma
 
 Arguments: $ARGUMENTS. The first is the base ref or the PR number. Default to the merge base with `origin/main`. Any further numbers are related or stacked PRs.
 
+Show the user each result once. Before the report, raise only what needs a decision for the work to go on. The report in step 5 is the only full summary, and it refers to decisions already made rather than repeating them.
+
 ## 1. Gather the inputs
 
 - The diff against the base, and the list of changed files.
@@ -76,8 +78,8 @@ Spawn three agents in parallel with the Agent tool. Give each one only the input
 
 Report to the user:
 
-- A table of each check in step 2 and each review in step 3, with what it found, what was fixed and what was rejected.
-- The evidence to carry into the PR body: coverage of the claims, the real-hub results, the release order and the benchmarks, each in one or two lines.
+- A table of each check in step 2 and each review in step 3, with what it found, what was fixed and what was rejected. Checks that found nothing share one line.
+- The evidence to carry into the PR body: coverage of the claims, the real-hub results, the release order and the benchmarks, each in one or two lines. Do not repeat what the table already says.
 - The optional refactors, with their costs.
 
 Do not say the work is ready for review until the user has seen this report.
